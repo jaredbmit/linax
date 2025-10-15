@@ -1,0 +1,7 @@
+[project]
+name = "linax"
+version = "0.1.0"
+description = "State Space Models in Jax"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
