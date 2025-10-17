@@ -29,7 +29,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           uv run pytest \
-            --cov=yourproject \
+            --cov=linax \
             --cov-branch \
             --cov-report=term-missing \
-            --cov-fail-under=00
+            --cov-fail-under=0
