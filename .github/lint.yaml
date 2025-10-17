@@ -4,3 +4,39 @@ on:
   pull_request:
   push:
     branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # pre-commit uses system python; uv handles deps in its own venv
+      - name: Install pre-commit hooks
+        run: |
+          uv run pre-commit install-hooks
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v46.0.5
+
+      - name: Lint only changed files
+        if: ${{ steps.changed-files.outputs.all_changed_files != '' }}
+        run: |
+          echo "Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
+          uv run pre-commit run --files ${{ steps.changed-files.outputs.all_changed_files }}
+
+      # Optional safety: avoid a silent success if nothing changed
+      - name: No files changed
+        if: ${{ steps.changed-files.outputs.all_changed_files == '' }}
+        run: echo "No changed files to lint."
