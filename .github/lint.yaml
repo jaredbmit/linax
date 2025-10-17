@@ -1,3 +1,7 @@
+# =============================
+# Adapted from:
+# 	https://github.com/fla-org/flash-linear-attention
+# =============================
 name: Lint
 
 on:
