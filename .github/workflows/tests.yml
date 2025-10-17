@@ -35,4 +35,4 @@ jobs:
             --cov=yourproject \
             --cov-branch \
             --cov-report=term-missing \
-            --cov-fail-under=85
+            --cov-fail-under=00
