@@ -1,35 +1,6 @@
-"""linax: A library for linear state space models in JAX."""
+"""State Space Models in JAX."""
 
-from linax.architecture import (
-    # Base classes
-    AbstractModel,
-    Backbone,
-    BackboneConfig,
-    # LinOSS implementations
-    LinOSS,
-    LinOSSBackbone,
-    LinOSSBackboneConfig,
-    LinOSSConfig,
-    LinOSSSequenceMixer,
-    LinOSSSequenceMixerConfig,
-    ModelConfig,
-    SequenceMixer,
-    SequenceMixerConfig,
-)
+from linax.utils import count_params
+from linax.version import __version__
 
-__all__ = [
-    # Base classes
-    "AbstractModel",
-    "ModelConfig",
-    "Backbone",
-    "BackboneConfig",
-    "SequenceMixer",
-    "SequenceMixerConfig",
-    # LinOSS implementations
-    "LinOSS",
-    "LinOSSConfig",
-    "LinOSSBackbone",
-    "LinOSSBackboneConfig",
-    "LinOSSSequenceMixer",
-    "LinOSSSequenceMixerConfig",
-]
+__all__ = ["__version__", "count_params"]

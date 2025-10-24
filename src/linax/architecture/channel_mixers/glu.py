@@ -1,6 +1,6 @@
 """Gated Linear Unit (GLU) layer.
 
-See: copied from LinOSS implementation.
+Adapted from LinOSS: https://github.com/tk-rusch/linoss
 """
 
 import equinox as eqx
@@ -11,6 +11,12 @@ from jaxtyping import Array, PRNGKeyArray
 
 class GLU(eqx.Module):
     """Gated Linear Unit (GLU) layer.
+
+    Attributes:
+        w1:
+          First linear layer.
+        w2:
+          Second linear layer.
 
     Args:
         input_dim:
@@ -28,6 +34,7 @@ class GLU(eqx.Module):
     w2: eqx.nn.Linear
 
     def __init__(self, input_dim: int, output_dim: int, key: PRNGKeyArray):
+        """Initialize the GLU layer."""
         w1_key, w2_key = jr.split(key, 2)
 
         self.w1 = eqx.nn.Linear(input_dim, output_dim, use_bias=True, key=w1_key)
@@ -44,3 +51,13 @@ class GLU(eqx.Module):
             Output tensor after applying gated linear transformation.
         """
         return self.w1(x) * jax.nn.sigmoid(self.w2(x))
+
+    def __repr__(self) -> str:
+        """Return a string representation of the GLU layer.
+
+        Returns:
+            Compact summary showing dimensions.
+        """
+        in_dim = self.w1.in_features
+        out_dim = self.w1.out_features
+        return f"GLU({in_dim}→{out_dim})"
