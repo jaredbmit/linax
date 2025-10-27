@@ -64,7 +64,9 @@ class LinOSSConfig(SSMConfig):
         """Replicates configs for each block and validates."""
         # Use object.__setattr__ because dataclass is frozen
         object.__setattr__(
-            self, "sequence_mixer_configs", [self.sequence_mixer_config] * self.num_blocks
+            self,
+            "sequence_mixer_configs",
+            [self.sequence_mixer_config] * self.num_blocks,
         )
         object.__setattr__(self, "block_configs", [self.block_config] * self.num_blocks)
 
