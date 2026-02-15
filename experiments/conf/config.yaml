@@ -1,0 +1,36 @@
+# Main configuration file for training
+# Usage: python train.py
+# Multirun experiments: python train.py -m model.num_blocks=5,10,15 training.learning_rate=1e-4,3e-4
+
+seed: 5678
+
+dataset:
+  name: mnistseq
+
+model:
+  type: linoss
+  num_blocks: 10
+  encoder:
+    out_features: 64
+  sequence_mixer:
+    state_dim: 64
+    damping: true
+    discretization: "IMEX2"
+    initialization: "AG"
+
+training:
+  batch_size: 32
+  learning_rate: 3e-4
+  steps: 10000
+  print_every: 1000
+  num_workers: 0
+
+hydra:
+  run:
+    dir: experiments/outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  sweep:
+    dir: experiments/outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
+  job:
+    chdir: true
+  output_subdir: .hydra
