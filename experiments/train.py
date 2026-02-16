@@ -9,12 +9,14 @@ import equinox as eqx
 import hydra
 import jax
 import jax.numpy as jnp
+import jax.random as jr
 import optax
 import torch
 from hydra.core.hydra_config import HydraConfig
 from jaxtyping import Array, Float, Int, PRNGKeyArray, PyTree
 from omegaconf import DictConfig, OmegaConf
 
+from linax.datasets import AddGaussianNoise
 from linax.encoder import LinearEncoderConfig
 from linax.heads.classification import ClassificationHeadConfig
 from linax.models.linoss import LinOSSConfig
@@ -59,7 +61,8 @@ def load_dataset(
     dataset_name: str,
     root: str,
     batch_size: int,
-    num_workers: int = 0,
+    input_noise_std: float = 0.0,
+    seed: int | None = None,
 ) -> tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader, dict[str, Any]]:
     """Load dataset and create dataloaders.
 
@@ -67,7 +70,8 @@ def load_dataset(
         dataset_name: Name of the dataset to load
         root: Root directory for datasets
         batch_size: Batch size for dataloaders
-        num_workers: Number of worker processes
+        input_noise_std: Additive noise to input data
+        seed: RNG
 
     Returns:
         Tuple of (trainloader, testloader, dataset_info)
@@ -75,25 +79,34 @@ def load_dataset(
     if dataset_name.lower() == "mnistseq":
         from linax.datasets.mnist import MNISTSeq
 
-        train_dataset = MNISTSeq(root=root, train=True, download=False)
+        # Add input noise
+        if input_noise_std > 0:
+            transform = AddGaussianNoise(noise_std=input_noise_std, seed=seed)
+            log.info(f"Adding Gaussian noise with std={input_noise_std}")
+
+        train_dataset = MNISTSeq(root=root, train=True, download=False, transform=transform)
         test_dataset = MNISTSeq(root=root, train=False, download=False)
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
+
+    # For deterministic shuffling
+    generator = torch.Generator()
+    generator.manual_seed(seed)
 
     trainloader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=num_workers,
+        generator=generator,
     )
     testloader = torch.utils.data.DataLoader(
         test_dataset,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=num_workers,
     )
 
     dataset_info = DATASET_REGISTRY[dataset_name.lower()]
+    dataset_info["input_noise_std"] = input_noise_std
     return trainloader, testloader, dataset_info
 
 
@@ -162,10 +175,9 @@ def evaluate(
     for x, y in testloader:
         x = x.numpy()
         y = y.numpy()
-        # Note that all the JAX operations happen inside `loss` and `compute_accuracy`,
-        # and both have JIT wrappers, so this is fast.
-        avg_loss += loss(inference_model, x, y, state, key)[0]
-        avg_acc += compute_accuracy(inference_model, x, y, state, key)
+        key, subkey = jr.split(key, 2)
+        avg_loss += loss(inference_model, x, y, state, subkey)[0]
+        avg_acc += compute_accuracy(inference_model, x, y, state, subkey)
     return avg_loss / len(testloader), avg_acc / len(testloader)
 
 
@@ -224,19 +236,19 @@ def train(
         while True:
             yield from trainloader
 
-    key, train_key = jax.random.split(key, 2)
-
     for step, (x, y) in zip(range(1, steps + 1), infinite_trainloader()):
         # PyTorch dataloaders give PyTorch tensors by default,
         # so convert them to NumPy arrays.
         x = x.numpy()
         y = y.numpy()
+
+        key, subkey = jax.random.split(key, 2)
         model, opt_state, train_loss, new_state = make_step(
-            model, loss_w_grad, optim, opt_state, x, y, state, train_key
+            model, loss_w_grad, optim, opt_state, x, y, state, subkey
         )
 
         if step % print_every == 0:
-            test_loss, test_accuracy = evaluate(model, testloader, new_state, key)
+            test_loss, test_accuracy = evaluate(model, testloader, new_state, subkey)
             log.info(
                 f"Step {step}: train_loss={train_loss.item():.6f}, "
                 f"test_loss={test_loss.item():.6f}, test_accuracy={test_accuracy.item():.4f}"
@@ -275,7 +287,8 @@ def main(cfg: DictConfig) -> None:
         dataset_name=cfg.dataset.name,
         root=data_dir,
         batch_size=cfg.training.batch_size,
-        num_workers=cfg.training.num_workers,
+        input_noise_std=cfg.dataset.get("input_noise_std", 0.0),
+        seed=cfg.seed,
     )
     log.info(f"Dataset info: {dataset_info}")
 

@@ -6,6 +6,7 @@ seed: 5678
 
 dataset:
   name: mnistseq
+  input_noise_std: 0.0
 
 model:
   type: linoss
@@ -23,7 +24,6 @@ training:
   learning_rate: 3e-4
   steps: 10000
   print_every: 1000
-  num_workers: 0
 
 hydra:
   run:
