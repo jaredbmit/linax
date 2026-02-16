@@ -73,10 +73,10 @@ def load_dataset(
         Tuple of (trainloader, testloader, dataset_info)
     """
     if dataset_name.lower() == "mnistseq":
-        from linax.datasets.MNISTSeq import MNISTSeq
+        from linax.datasets.mnist import MNISTSeq
 
-        train_dataset = MNISTSeq(root=root, train=True, download=True)
-        test_dataset = MNISTSeq(root=root, train=False, download=True)
+        train_dataset = MNISTSeq(root=root, train=True, download=False)
+        test_dataset = MNISTSeq(root=root, train=False, download=False)
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
 

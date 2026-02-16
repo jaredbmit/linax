@@ -1,26 +1,23 @@
 # Executable and arguments
-executable = run_single_job.sh
-arguments = $(Process) $(ClusterId)
+executable = experiments/run_job.sh
+arguments = $(MULTIRUN_NAME) $(Process)
 
 # Environment setup
 getenv = True
 environment = "HYDRA_FULL_ERROR=1"
 
 # Resource requirements
-request_cpus = 2
-request_memory = 8GB
-request_disk = 8GB
+request_memory = 64000
+request_cpus = 4
 request_gpus = 1
 
 # Logging
 log = logs/job_$(ClusterId)_$(Process).log
 output = logs/job_$(ClusterId)_$(Process).out
 error = logs/job_$(ClusterId)_$(Process).err
-
-# Job management
-should_transfer_files = NO
-when_to_transfer_output = ON_EXIT
-notification = Never
+# requirements = TARGET.CUDAGlobalMemoryMb > 60000
+MaxTime = 32000
+periodic_remove = (JobStatus =?= 2) && ((CurrentTime - JobCurrentStartDate) >= $(MaxTime))
 
 # Specify number of jobs
 # This will be set by generate_condor_jobs.py

@@ -52,6 +52,12 @@ Example:
     )
 
     parser.add_argument(
+        "--experiment-name",
+        default=None,
+        help="Experiment directory name. Defaults to current date and time.",
+    )
+
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Show what would be done without actually creating files",
@@ -142,21 +148,21 @@ def main():
             print(f"  ... and {num_jobs - 5} more jobs")
         return
 
-    # Create output directory
-    now = datetime.now()
-    output_dir = Path(args.output_dir) / f"{now:%Y-%m-%d}/{now:%H-%M-%S}"
+    # Create output directory (and subdirectories)
+    if not args.experiment_name:
+        args.experiment_name = f"{datetime.now():%Y-%m-%d-%H-%M-%S}"
+    output_dir = Path(args.output_dir) / args.experiment_name
     if output_dir.exists():
         print(f"\nRemoving existing directory: {output_dir}")
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
     (output_dir / "outputs").mkdir()
+    (output_dir / "configs").mkdir()
+    print(f"\nCreated output directory in {output_dir}/...")
 
     # Generate configuration files for each job
-    config_dir = output_dir / "configs"
-    config_dir.mkdir()
-    print(f"\nGenerating configuration files in {config_dir}/...")
     for i, params in enumerate(combinations):
-        config_file = config_dir / f"config_{i}.txt"
+        config_file = output_dir / "configs" / f"config_{i}.txt"
 
         # Combine sweep parameters with fixed parameters
         overrides = format_hydra_overrides(params)
@@ -179,7 +185,9 @@ def main():
         submit_content = f.read()
 
     # Replace queue line with actual number of jobs
+    # and replace run argument with multirun folder
     submit_content = submit_content.replace("queue $(NUM_JOBS)", f"queue {num_jobs}")
+    submit_content = submit_content.replace("$(MULTIRUN_NAME)", args.experiment_name)
 
     # Write to temporary submit file
     temp_submit_file = submit_file.with_suffix(".sub.generated")

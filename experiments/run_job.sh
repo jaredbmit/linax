@@ -4,11 +4,20 @@
 
 set -e
 
+# shellcheck disable=SC1091
+source /etc/profile.d/modules.sh
+
+# Environment setup
+module load cuda/12.9
+unset LD_LIBRARY_PATH  # Otherwise cuda device not found in jax ?
+export HOME=/home/jboyer
+
+# Args
 MULTIRUN_NAME=$1    # typically datetime
 PROCESS_ID=$2       # Job ID
 
 # Specify config & hydra output
-SWEEP_DIR="sweeps/${MULTIRUN_NAME}"
+SWEEP_DIR="experiments/sweeps/${MULTIRUN_NAME}"
 CONFIG_FILE="${SWEEP_DIR}/configs/config_${PROCESS_ID}.txt"
 OUTPUT_DIR="${SWEEP_DIR}/outputs/"
 
@@ -34,7 +43,7 @@ echo "=========================================="
 
 # Run the training script with Hydra overrides
 # shellcheck disable=SC2086
-python train.py \
+uv run python experiments/train.py \
     --multirun \
     hydra.sweep.dir="${OUTPUT_DIR}" \
     hydra.sweep.subdir="${PROCESS_ID}" \

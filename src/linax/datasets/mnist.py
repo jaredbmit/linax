@@ -4,7 +4,6 @@ import logging
 from collections.abc import Callable
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torchvision.datasets import VisionDataset
@@ -348,6 +347,8 @@ class MNISTSeq(VisionDataset):
             >>> labs = np.array([dataset[i][1].numpy() for i in range(16)])
             >>> dataset.plot_batch(seqs, labs)
         """
+        import matplotlib.pyplot as plt
+
         # Convert tensors to numpy if needed
         if isinstance(sequences, torch.Tensor):
             sequences = sequences.detach().cpu().numpy()
